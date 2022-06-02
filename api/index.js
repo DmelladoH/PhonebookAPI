@@ -1,9 +1,8 @@
 const http = require('http')
 const express = require('express')
-
 const app = express()
 
-const phonebook = [
+let phonebook = [
     { 
       "id": 1,
       "name": "Arto Hellas", 
@@ -27,23 +26,6 @@ const phonebook = [
 ]
 
 
-app.get('/api/persons', (request, response) => {
-    response.json(phonebook)
-})
-
-app.get('/api/persons/:id',(request, response) => {
-    const id = Number(request.params.id)
-    const person = phonebook.find(person => person.id === id)
-
-    if(person){
-        response.json(person)
-    }else{
-        response.status(404).end()
-    }
-
-    
-})
-
 app.get('/info',(request, response) => {
     
     const phonebookSize = phonebook.length
@@ -51,6 +33,32 @@ app.get('/info',(request, response) => {
     response.send(`<div><p>Phonebook has info for ${phonebookSize} people<p/><p>${time}<p/><div/>`)
 
 })
+
+
+app.get('/api/persons', (request, response) => {
+    response.json(phonebook)
+})
+
+app.get('/api/persons/:id',(request, response) => {
+    const id = Number(request.params.id)
+    person = phonebook.find(person => person.id === id)
+
+    if(person){
+        response.json(person)
+    }else{
+        response.status(404).end()
+    }
+
+})
+
+
+app.delete('/api/persons/:id', (request, response) => {
+    const id = Number(request.params.id)
+    phonebook = phonebook.filter(person => person.id !== id)
+
+    response.status(204).end()
+})
+
 const PORT = 3001
 app.listen(PORT)
 console.log(`Server running on port ${PORT}`)
