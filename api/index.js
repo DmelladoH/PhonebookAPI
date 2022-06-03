@@ -51,6 +51,18 @@ app.get('/api/persons/:id',(request, response) => {
 
 })
 
+app.post('/api/persons', (request, response) => {
+
+    const person = {
+        id: Math.floor(Math.random() * 1000),
+        name: request.params.name, 
+        number: request.params.number
+    }
+
+    phonebook.concat(person)
+
+    response.json(person)
+})
 
 app.delete('/api/persons/:id', (request, response) => {
     const id = Number(request.params.id)
