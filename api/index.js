@@ -1,6 +1,7 @@
 const http = require('http')
 const express = require('express')
 const app = express()
+app.use(express.json())
 
 let phonebook = [
     { 
@@ -51,17 +52,33 @@ app.get('/api/persons/:id',(request, response) => {
 
 })
 
+
 app.post('/api/persons', (request, response) => {
+
+    const body = request.body
+
+
+    if(!body.name || !body.number){
+        return response.status(400).json({
+            error: 'The name or number is missing'
+        })
+    }
+
+    if(phonebook.find(person => person.name === body.name)){
+        return response.status(400).json({
+            error: 'The name already exists in the phonebook'
+        })
+    }
 
     const person = {
         id: Math.floor(Math.random() * 1000),
-        name: request.params.name, 
-        number: request.params.number
+        name: body.name, 
+        number: body.number
     }
 
-    phonebook.concat(person)
-
+    phonebook = phonebook.concat(person)
     response.json(person)
+   
 })
 
 app.delete('/api/persons/:id', (request, response) => {
