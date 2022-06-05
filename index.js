@@ -1,6 +1,13 @@
+require('dotenv').config()
+require('./mongo.js')
+
 const express = require('express')
 const cors = require('cors')
 const app = express()
+const Contact = require('./models/Contact')
+
+const notFound = require('./middleware/notFound')
+const handleError = require('./middleware/handleError')
 
 app.use(express.json())
 app.use(cors())
@@ -14,54 +21,27 @@ const requestLogger = (request, response, next) => {
   next()
 }
 
-const unknownEndPoint = (request, response, next) => {
-  response.status(404).send({ error: 'Unknown endpoint' })
-}
-
-let phonebook = [
-  {
-    id: 1,
-    name: 'Arto Hellas',
-    number: '040-123456'
-  },
-  {
-    id: 2,
-    name: 'Ada Lovelace',
-    number: '39-44-5323523'
-  },
-  {
-    id: 3,
-    name: 'Dan Abramov',
-    number: '12-43-234345'
-  },
-  {
-    id: 4,
-    name: 'Mary Poppendieck',
-    number: '39-23-6423122'
-  }
-]
-
 app.use(requestLogger)
 
 app.get('/info', (request, response) => {
-  const phonebookSize = phonebook.length
+  const phonebookSize = Contact.length
   const time = new Date().toUTCString()
   response.send(`<div><p>Phonebook has info for ${phonebookSize} people<p/><p>${time}<p/><div/>`)
 })
 
 app.get('/api/persons', (request, response) => {
-  response.json(phonebook)
+  Contact.find({}).then(contacts => {
+    response.json(contacts)
+  })
 })
 
-app.get('/api/persons/:id', (request, response) => {
-  const id = Number(request.params.id)
-  const person = phonebook.find(person => person.id === id)
+app.get('/api/persons/:id', (request, response, next) => {
+  const { id } = request.params
 
-  if (person) {
-    response.json(person)
-  } else {
+  Contact.findById(id).then(contact => {
+    if (contact) response.json(contact)
     response.status(404).end()
-  }
+  }).catch(err => next(err))
 })
 
 app.post('/api/persons', (request, response) => {
@@ -73,32 +53,50 @@ app.post('/api/persons', (request, response) => {
     })
   }
 
-  if (phonebook.find(person => person.name === body.name)) {
+  if (Contact.findOne({ name: body.name })) {
     return response.status(400).json({
       error: 'The name already exists in the phonebook'
     })
   }
 
-  const person = {
-    id: Math.floor(Math.random() * 1000),
+  const contact = new Contact({
     name: body.name,
     number: body.number
+  })
+
+  contact.save()
+    .then(savedContact => {
+      response.json(savedContact)
+    })
+})
+
+app.delete('/api/persons/:id', (request, response, next) => {
+  const { id } = request.params
+
+  Contact.findByIdAndDelete(id).then(contact => {
+    response.status(204).end()
+  }).catch(err => next(err))
+})
+
+app.put('/api/persons/:id', (request, response, next) => {
+  const { id } = request.params
+  const contact = request.body
+
+  const newContact = {
+    name: contact.name,
+    number: contact.number
   }
 
-  phonebook = phonebook.concat(person)
-  response.json(person)
+  Contact.findByIdAndUpdate(id, newContact, { new: true }).then(contact => {
+    response.json(contact)
+  }).catch(err => next(err))
 })
 
-app.delete('/api/persons/:id', (request, response) => {
-  const id = Number(request.params.id)
-  phonebook = phonebook.filter(person => person.id !== id)
+app.use(notFound)
 
-  response.status(204).end()
-})
+app.use(handleError)
 
-app.use(unknownEndPoint)
-
-const PORT = process.env.PORT || 3001
+const PORT = process.env.PORT
 
 app.listen(PORT)
 console.log(`Server running on port ${PORT}`)
