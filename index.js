@@ -1,16 +1,21 @@
 require('dotenv').config()
-require('./mongo.js')
+
+const connectionURI = process.env.MONGO_DB_URI
+const environment = process.env.NODE_ENV
 
 const express = require('express')
 const cors = require('cors')
 const app = express()
 const Contact = require('./models/Contact')
+const { databaseConnection, databaseDisconnection } = require('./mongo')
 
 const notFound = require('./middleware/notFound')
 const handleError = require('./middleware/handleError')
 
 app.use(express.json())
 app.use(cors())
+
+databaseConnection(connectionURI, environment)
 
 const requestLogger = (request, response, next) => {
   console.log('Method: ', request.method)
@@ -29,13 +34,12 @@ app.get('/info', (request, response) => {
   response.send(`<div><p>Phonebook has info for ${phonebookSize} people<p/><p>${time}<p/><div/>`)
 })
 
-app.get('/api/persons', (request, response) => {
-  Contact.find({}).then(contacts => {
-    response.json(contacts)
-  })
+app.get('/api/contacts', async (request, response) => {
+  const contact = await Contact.find({})
+  response.json(contact)
 })
 
-app.get('/api/persons/:id', (request, response, next) => {
+app.get('/api/contacts/:id', (request, response, next) => {
   const { id } = request.params
 
   Contact.findById(id).then(contact => {
@@ -44,7 +48,7 @@ app.get('/api/persons/:id', (request, response, next) => {
   }).catch(err => next(err))
 })
 
-app.post('/api/persons', (request, response) => {
+app.post('/api/contacts', async (request, response, next) => {
   const body = request.body
 
   if (!body.name || !body.number) {
@@ -53,7 +57,9 @@ app.post('/api/persons', (request, response) => {
     })
   }
 
-  if (Contact.findOne({ name: body.name })) {
+  const checkContact = await Contact.findOne({ name: body.name }).exec()
+
+  if (checkContact) {
     return response.status(400).json({
       error: 'The name already exists in the phonebook'
     })
@@ -64,21 +70,26 @@ app.post('/api/persons', (request, response) => {
     number: body.number
   })
 
-  contact.save()
-    .then(savedContact => {
-      response.json(savedContact)
-    })
+  try {
+    const saverdContact = await contact.save()
+    response.json(saverdContact)
+  } catch (err) {
+    next(err)
+  }
 })
 
-app.delete('/api/persons/:id', (request, response, next) => {
+app.delete('/api/contacts/:id', async (request, response, next) => {
   const { id } = request.params
 
-  Contact.findByIdAndDelete(id).then(contact => {
+  try {
+    await Contact.findByIdAndDelete(id)
     response.status(204).end()
-  }).catch(err => next(err))
+  } catch (err) {
+    next(err)
+  }
 })
 
-app.put('/api/persons/:id', (request, response, next) => {
+app.put('/api/contacts/:id', (request, response, next) => {
   const { id } = request.params
   const contact = request.body
 
@@ -96,7 +107,14 @@ app.use(notFound)
 
 app.use(handleError)
 
+process.on('uncaughtException', () => {
+  databaseDisconnection()
+})
+
 const PORT = process.env.PORT
 
-app.listen(PORT)
-console.log(`Server running on port ${PORT}`)
+const server = app.listen(PORT, () => {
+  console.log(`Server running on port ${PORT}`)
+})
+
+module.exports = { app, server }

@@ -17,17 +17,3 @@ contactScheme.set('toJSON', {
 const Contact = model('Contact', contactScheme)
 
 module.exports = Contact
-
-/* const newContact = new Contact({
-  name: 'Arto Hellas',
-  number: '040-123456'
-})
-
-newContact.save()
-  .then(result => {
-    console.log(result)
-    mongoose.connection.close()
-  })
-  .catch(error => {
-    console.error(error)
-  }) */

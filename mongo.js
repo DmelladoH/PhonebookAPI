@@ -1,14 +1,32 @@
 const mongoose = require('mongoose')
 
-const connectionString = process.env.MONGO_DB_URI
+function databaseConnection (connectionURI, envarionment) {
+  console.log(envarionment)
+  if (envarionment === 'test') {
+    console.log('mocking database')
+    const Mockgoose = require('mockgoose').Mockgoose
+    const mockgoose = new Mockgoose(mongoose)
 
-mongoose.connect(connectionString)
-  .then(() => {
-    console.log('Database connected')
-  }).catch(err => {
-    console.error(err)
-  })
+    mockgoose.prepareStorage().then(() => {
+      mongoConnection(connectionURI)
+    })
+  } else {
+    console.log('connecting to database')
+    mongoConnection(connectionURI)
+  }
+}
 
-process.on('uncaughtException', () => {
+function databaseDisconnection () {
   mongoose.connection.disconnect()
-})
+}
+
+function mongoConnection (connectionURI) {
+  mongoose.connect(connectionURI)
+    .then(() => {
+      console.log('Database connected')
+    }).catch(err => {
+      console.error(err)
+    })
+}
+
+module.exports = { databaseConnection, databaseDisconnection }
