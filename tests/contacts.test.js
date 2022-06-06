@@ -21,14 +21,15 @@ beforeEach(async () => {
   }
 })
 
-describe('GET ', () => {
-  test('contacts are returned', async () => {
+describe('GET / getting ', () => {
+  test('all contacts', async () => {
     const response = await getAllContacts()
+
     expect(response.status).toBe(200)
     expect(response.body).toHaveLength(initialContacts.length)
   })
 
-  test('contact by id is returned', async () => {
+  test('a contact when the id is valid', async () => {
     const response = await getAllContacts()
     const firstContact = response.body[0]
 
@@ -43,16 +44,17 @@ describe('GET ', () => {
     expect(secondResponse.body.number).toBe(number)
   })
 
-  test('contacts by invalid id are not returned', async () => {
+  test('an error when the id is not valid', async () => {
     const invalidId = 1234
 
     const secondResponse = await getContact(invalidId)
+
     expect(secondResponse.status).toBe(400)
   })
 })
 
-describe('POST ', () => {
-  test('valid contact', async () => {
+describe('POST / a new Contact ', () => {
+  test('is created when it is correct', async () => {
     const newContact = {
       name: 'Carlos',
       number: '000-00000'
@@ -65,11 +67,12 @@ describe('POST ', () => {
       .expect('Content-Type', /application\/json/)
 
     const response = await getAllContacts()
+    expect(response.body).toHaveLength(initialContacts.length + 1)
     expect(response.body.map(contact => contact.name))
       .toContain(newContact.name)
   })
 
-  test('contact without name are not saved', async () => {
+  test('is not created without the name field', async () => {
     const newInvalidContact = {
       number: '000-00000'
     }
@@ -84,7 +87,7 @@ describe('POST ', () => {
     expect(response.body).toHaveLength(initialContacts.length)
   })
 
-  test('contact without number are not saved', async () => {
+  test('is not created without the number field', async () => {
     const newInvalidContact = {
       name: 'Carlos'
     }
@@ -99,9 +102,10 @@ describe('POST ', () => {
     expect(response.body).toHaveLength(initialContacts.length)
   })
 
-  test('contact with a repeated name are not saved', async () => {
+  test('is not created when the contact is already created', async () => {
     const newInvalidContact = {
-      name: initialContacts[0].name
+      name: initialContacts[0].name,
+      number: '000-00000'
     }
 
     await api
@@ -115,8 +119,8 @@ describe('POST ', () => {
   })
 })
 
-describe('DELETE ', () => {
-  test('a contact can be deleted', async () => {
+describe('DELETE / deleting contacts ', () => {
+  test('when exists in the database', async () => {
     const response = await getAllContacts()
     const noteToDelete = response.body[0]
 
@@ -130,7 +134,7 @@ describe('DELETE ', () => {
     expect(secondResponse.body.map(contact => contact.name)).not.toContain(noteToDelete.name)
   })
 
-  test('a not that does not exist can not be deleted', async () => {
+  test('does not delete when the contact does not exist in the database', async () => {
     await api
       .delete('/api/contacts/1234')
       .expect(400)
@@ -141,8 +145,8 @@ describe('DELETE ', () => {
   })
 })
 
-describe('PUT ', () => {
-  test('a contact can be updated', async () => {
+describe('PUT / Upgrading a contact ', () => {
+  test('when the contact exists in the database', async () => {
     const response = await getAllContacts()
     const contactToUpdate = response.body[0]
 

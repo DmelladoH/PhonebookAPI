@@ -14,6 +14,19 @@ const initialContacts = [
   }
 ]
 
+const initialUsers = [
+  {
+    userName: 'testUser',
+    name: 'test',
+    password: '123'
+  },
+  {
+    userName: 'anotherTestUser',
+    name: 'anotherTest',
+    password: '123'
+  }
+]
+
 const getAllContacts = async () => {
   return await api.get('/api/contacts')
 }
@@ -22,4 +35,12 @@ const getContact = async (id) => {
   return await api.get(`/api/contacts/${id}`)
 }
 
-module.exports = { initialContacts, api, getAllContacts, getContact }
+const getAllUsers = async () => {
+  return await api.get('/api/users')
+}
+
+const getUser = async (id) => {
+  return await api.get(`/api/users/${id}`)
+}
+
+module.exports = { initialContacts, initialUsers, api, getAllContacts, getContact, getAllUsers, getUser }
