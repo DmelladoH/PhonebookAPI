@@ -12,6 +12,7 @@ const { databaseConnection, databaseDisconnection } = require('./mongo')
 const notFound = require('./middleware/notFound')
 const handleError = require('./middleware/handleError')
 const contactRouter = require('./controller/contacts')
+const usersRouter = require('./controller/users')
 
 app.use(express.json())
 app.use(cors())
@@ -36,6 +37,7 @@ app.use(requestLogger)
 }) */
 
 app.use('/api/contacts', contactRouter)
+app.use('/api/users', usersRouter)
 
 app.use(notFound)
 app.use(handleError)

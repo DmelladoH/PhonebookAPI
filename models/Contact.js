@@ -1,12 +1,15 @@
-const mongoose = require('mongoose')
-const { Schema, model } = mongoose
+const { Schema, model } = require('mongoose')
 
-const contactScheme = new Schema({
+const contactSchema = new Schema({
   name: String,
-  number: String
+  number: String,
+  users: [{
+    type: Schema.Types.ObjectId,
+    ref: 'User'
+  }]
 })
 
-contactScheme.set('toJSON', {
+contactSchema.set('toJSON', {
   transform: (documentm, returnedObject) => {
     returnedObject.id = returnedObject._id
     delete returnedObject.__v
@@ -14,6 +17,6 @@ contactScheme.set('toJSON', {
   }
 })
 
-const Contact = model('Contact', contactScheme)
+const Contact = model('Contact', contactSchema)
 
 module.exports = Contact

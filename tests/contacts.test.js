@@ -164,7 +164,6 @@ describe('PUT / Upgrading a contact ', () => {
 
     const secondResponse = await getContact(id)
     expect(secondResponse.body.name).toBe(newContact.name)
-
     expect(secondResponse.body.number).toBe(newContact.number)
   })
 })

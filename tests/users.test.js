@@ -14,7 +14,7 @@ beforeEach(async () => {
   await User.deleteMany({})
 
   for (const user of initialUsers) {
-    const userObject = new User(user.id)
+    const userObject = new User(user)
     await userObject.save()
   }
 })
@@ -66,7 +66,7 @@ describe('POST / a new User', () => {
 
     const response = await getAllUsers()
     expect(response.body).toHaveLength(initialUsers.length + 1)
-    expect(response.body.map(user => user.userName)).toContain(newUser.name)
+    expect(response.body.map(user => user.userName)).toContain(newUser.userName)
   })
 
   test('is not created without the userName field', async () => {
@@ -91,7 +91,7 @@ describe('POST / a new User', () => {
       password: '123'
     }
 
-    await api
+    const result = await api
       .post('/api/users')
       .send(newInvalidUser)
       .expect(400)
@@ -99,6 +99,7 @@ describe('POST / a new User', () => {
 
     const response = await getAllUsers()
     expect(response.body).toHaveLength(initialUsers.length)
+    expect(result.body.errors.name.message).toContain('name required')
   })
 
   test('is not created without the password field', async () => {
@@ -132,25 +133,41 @@ describe('POST / a new User', () => {
     const response = await getAllUsers()
     expect(response.body).toHaveLength(initialUsers.length)
   })
+  test('is not created when the userName is invalid', async () => {
+    const newInvalidUser = {
+      userName: 'new User',
+      name: 'name',
+      password: '123'
+    }
+
+    await api
+      .post('/api/users')
+      .send(newInvalidUser)
+      .expect(400)
+      .expect('Content-Type', /application\/json/)
+
+    const response = await getAllUsers()
+    expect(response.body).toHaveLength(initialUsers.length)
+  })
 })
 
-describe('DELETE / deleting contacts ', () => {
+describe('DELETE / deleting users ', () => {
   test('when exists in the database', async () => {
     const response = await getAllUsers()
     const userToDelete = response.body[0]
 
     await api
-      .delete(`/api/contacts/${userToDelete.id}`)
+      .delete(`/api/users/${userToDelete.id}`)
       .expect(204)
 
-    const secondResponse = getAllUsers()
+    const secondResponse = await getAllUsers()
     expect(secondResponse.body).toHaveLength(initialUsers.length - 1)
     expect(secondResponse.body.map(user => user.userName)).not.toContain(userToDelete)
   })
 
   test('does not delete when the user does not exist in the database', async () => {
     await api
-      .delete('/api/contacts/123')
+      .delete('/api/users/123')
       .expect(400)
 
     const response = await getAllUsers()
@@ -158,7 +175,7 @@ describe('DELETE / deleting contacts ', () => {
   })
 })
 
-describe('PUT / Upgrading a contact ', () => {
+describe('PUT / Upgrading a users ', () => {
   test.skip('when the user exists in the database', async () => {
     const response = await getAllUsers()
     const userToUpdate = response.body[0]
@@ -171,7 +188,7 @@ describe('PUT / Upgrading a contact ', () => {
     }
 
     await api
-      .delete(`/api/contacts/${userToUpdate.id}`)
+      .delete(`/api/users/${userToUpdate.id}`)
       .expect(200)
 
     const secondResponse = await getUser(id)

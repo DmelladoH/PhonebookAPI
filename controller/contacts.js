@@ -7,18 +7,15 @@ contactRouter.get('/', async (request, response) => {
   response.json(contact)
 })
 
-contactRouter.get('/', async (request, response) => {
-  const contact = await Contact.find({})
-  response.json(contact)
-})
-
-contactRouter.get('/:id', (request, response, next) => {
+contactRouter.get('/:id', async (request, response, next) => {
   const { id } = request.params
 
-  Contact.findById(id).then(contact => {
-    if (contact) response.json(contact)
-    response.status(404).end()
-  }).catch(err => next(err))
+  try {
+    const contact = await Contact.findById(id)
+    response.json(contact)
+  } catch (err) {
+    next(err)
+  }
 })
 
 contactRouter.post('/', async (request, response, next) => {
@@ -44,8 +41,8 @@ contactRouter.post('/', async (request, response, next) => {
   })
 
   try {
-    const saverdContact = await contact.save()
-    response.json(saverdContact)
+    const savedContact = await contact.save()
+    response.json(savedContact)
   } catch (err) {
     next(err)
   }
@@ -62,18 +59,21 @@ contactRouter.delete('/:id', async (request, response, next) => {
   }
 })
 
-contactRouter.put('/:id', (request, response, next) => {
+contactRouter.put('/:id', async (request, response, next) => {
   const { id } = request.params
   const contact = request.body
 
-  const newContact = {
+  const updatedContact = {
     name: contact.name,
     number: contact.number
   }
 
-  Contact.findByIdAndUpdate(id, newContact, { new: true }).then(contact => {
+  try {
+    await Contact.findByIdAndUpdate(id, updatedContact, { new: true })
     response.json(contact)
-  }).catch(err => next(err))
+  } catch (err) {
+    next(err)
+  }
 })
 
 module.exports = contactRouter
