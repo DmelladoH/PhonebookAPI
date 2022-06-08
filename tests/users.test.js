@@ -21,32 +21,37 @@ beforeEach(async () => {
 
 describe('GET / getting ', () => {
   test('all users', async () => {
-    const response = await getAllUsers()
+    const response = await api
+      .get('/api/users')
+      .expect(200)
+      .expect('Content-Type', /application\/json/)
 
-    expect(response.status).toBe(200)
     expect(response.body).toHaveLength(initialUsers.length)
   })
 
   test('a user when the id is valid', async () => {
-    const response = await getAllUsers()
-    const firstUser = response.body[0]
+    const usersDB = await getAllUsers()
+    const firstUser = usersDB[0]
 
     const id = firstUser.id
     const userName = firstUser.userName
     const name = firstUser.name
 
-    const secondResponse = await getUser(id)
+    const response = await api
+      .get(`/api/users/${id}`)
+      .expect(200)
+      .expect('Content-Type', /application\/json/)
 
-    expect(secondResponse.status).toBe(200)
-    expect(secondResponse.body.userName).toBe(userName)
-    expect(secondResponse.body.name).toBe(name)
+    expect(response.body.userName).toBe(userName)
+    expect(response.body.name).toBe(name)
   })
   test('an error when the id is not valid', async () => {
     const invalidId = 12345678
 
-    const secondResponse = await getUser(invalidId)
-
-    expect(secondResponse.status).toBe(400)
+    await api
+      .get(`/api/users/${invalidId}`)
+      .expect(400)
+      .expect('Content-Type', /application\/json/)
   })
 })
 
@@ -64,9 +69,9 @@ describe('POST / a new User', () => {
       .expect(200)
       .expect('Content-Type', /application\/json/)
 
-    const response = await getAllUsers()
-    expect(response.body).toHaveLength(initialUsers.length + 1)
-    expect(response.body.map(user => user.userName)).toContain(newUser.userName)
+    const usersDB = await getAllUsers()
+    expect(usersDB).toHaveLength(initialUsers.length + 1)
+    expect(usersDB.map(user => user.userName)).toContain(newUser.userName)
   })
 
   test('is not created without the userName field', async () => {
@@ -81,8 +86,8 @@ describe('POST / a new User', () => {
       .expect(400)
       .expect('Content-Type', /application\/json/)
 
-    const response = await getAllUsers()
-    expect(response.body).toHaveLength(initialUsers.length)
+    const usersDB = await getAllUsers()
+    expect(usersDB).toHaveLength(initialUsers.length)
   })
 
   test('is not created without the name field', async () => {
@@ -91,15 +96,15 @@ describe('POST / a new User', () => {
       password: '123'
     }
 
-    const result = await api
+    const response = await api
       .post('/api/users')
       .send(newInvalidUser)
       .expect(400)
       .expect('Content-Type', /application\/json/)
 
-    const response = await getAllUsers()
-    expect(response.body).toHaveLength(initialUsers.length)
-    expect(result.body.errors.name.message).toContain('name required')
+    const usersDB = await getAllUsers()
+    expect(usersDB).toHaveLength(initialUsers.length)
+    expect(response.body.errors.name.message).toContain('name required')
   })
 
   test('is not created without the password field', async () => {
@@ -108,14 +113,16 @@ describe('POST / a new User', () => {
       name: 'name'
     }
 
-    await api
+    const response = await api
       .post('/api/users')
       .send(newInvalidUser)
       .expect(400)
       .expect('Content-Type', /application\/json/)
 
-    const response = await getAllUsers()
-    expect(response.body).toHaveLength(initialUsers.length)
+    const usersDB = await getAllUsers()
+
+    expect(usersDB).toHaveLength(initialUsers.length)
+    expect(response.body.error).toContain('password required')
   })
   test('is not created when the user is already created', async () => {
     const newInvalidUser = {
@@ -124,45 +131,52 @@ describe('POST / a new User', () => {
       password: '123'
     }
 
-    await api
+    const response = await api
       .post('/api/users')
       .send(newInvalidUser)
       .expect(400)
       .expect('Content-Type', /application\/json/)
 
-    const response = await getAllUsers()
-    expect(response.body).toHaveLength(initialUsers.length)
+    console.log(response)
+    const userDB = await getAllUsers()
+    expect(userDB).toHaveLength(initialUsers.length)
+    expect(response.body.errors.userName.message).toContain('Error, expected `userName` to be unique. Value: `testUser`')
   })
   test('is not created when the userName is invalid', async () => {
     const newInvalidUser = {
-      userName: 'new User',
+      userName: 'a a',
       name: 'name',
       password: '123'
     }
 
-    await api
+    console.log(newInvalidUser)
+
+    const response = await api
       .post('/api/users')
       .send(newInvalidUser)
       .expect(400)
       .expect('Content-Type', /application\/json/)
 
-    const response = await getAllUsers()
-    expect(response.body).toHaveLength(initialUsers.length)
+    expect(response.body.errors.userName.message).toContain('invalid userName')
+
+    console.log(response.body)
+    const userDB = await getAllUsers()
+    expect(userDB).toHaveLength(initialUsers.length)
   })
 })
 
 describe('DELETE / deleting users ', () => {
   test('when exists in the database', async () => {
     const response = await getAllUsers()
-    const userToDelete = response.body[0]
+    const userToDelete = response[0]
 
     await api
       .delete(`/api/users/${userToDelete.id}`)
       .expect(204)
 
-    const secondResponse = await getAllUsers()
-    expect(secondResponse.body).toHaveLength(initialUsers.length - 1)
-    expect(secondResponse.body.map(user => user.userName)).not.toContain(userToDelete)
+    const usersDB = await getAllUsers()
+    expect(usersDB).toHaveLength(initialUsers.length - 1)
+    expect(usersDB.map(user => user.userName)).not.toContain(userToDelete)
   })
 
   test('does not delete when the user does not exist in the database', async () => {
@@ -170,15 +184,15 @@ describe('DELETE / deleting users ', () => {
       .delete('/api/users/123')
       .expect(400)
 
-    const response = await getAllUsers()
-    expect(response.body).toHaveLength(initialUsers.length)
+    const usersDB = await getAllUsers()
+    expect(usersDB).toHaveLength(initialUsers.length)
   })
 })
 
 describe('PUT / Upgrading a users ', () => {
   test.skip('when the user exists in the database', async () => {
-    const response = await getAllUsers()
-    const userToUpdate = response.body[0]
+    const usersDB = await getAllUsers()
+    const userToUpdate = usersDB[0]
 
     const id = userToUpdate.id
 
@@ -191,8 +205,8 @@ describe('PUT / Upgrading a users ', () => {
       .delete(`/api/users/${userToUpdate.id}`)
       .expect(200)
 
-    const secondResponse = await getUser(id)
-    expect(secondResponse.body.name).toBe(newUser.name)
+    const user = await getUser(id)
+    expect(user.namse).toBe(newUser.name)
   })
 })
 

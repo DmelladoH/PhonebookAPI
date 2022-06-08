@@ -1,6 +1,7 @@
 const supertest = require('supertest')
 const { app } = require('../index')
-
+const User = require('../models/User')
+const Contact = require('../models/Contact')
 const api = supertest(app)
 
 const initialContacts = [
@@ -28,7 +29,8 @@ const initialUsers = [
 ]
 
 const getAllContacts = async () => {
-  return await api.get('/api/contacts')
+  const contactDB = await Contact.find({})
+  return contactDB.map(contact => contact.toJSON())
 }
 
 const getContact = async (id) => {
@@ -36,7 +38,8 @@ const getContact = async (id) => {
 }
 
 const getAllUsers = async () => {
-  return await api.get('/api/users')
+  const usersDB = await User.find({})
+  return usersDB.map(user => user.toJSON())
 }
 
 const getUser = async (id) => {

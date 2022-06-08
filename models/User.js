@@ -1,19 +1,22 @@
 const { Schema, model } = require('mongoose')
 const uniqueValidator = require('mongoose-unique-validator')
+// const validate = require('mongoose-validator')
 
+// [a-zA-Z0-9@#$%&_-]*
 const userSchema = new Schema({
   userName: {
     type: String,
     unique: true,
-    required: [true, 'userNamse required']
+    required: [true, 'userName required']
+
   },
   name: {
     type: String,
     required: [true, 'name required']
   },
-  passwordHash: {
-    type: String
-    // required: [true, 'password required']
+  password: {
+    type: String,
+    required: [true, 'password required']
   },
   contacts: [{
     type: Schema.Types.ObjectId,

@@ -21,14 +21,15 @@ userRouter.get('/:id', async (request, response, next) => {
 
 userRouter.post('/', async (request, response, next) => {
   const body = request.body
-
+  const saltRounds = 10
+  console.log('xd')
   try {
-    if (body.userName.split(' ').length > 1) {
+    if (!body.password) {
       return response.status(400).json({
-        error: 'The username must not conatin spaces'
+        error: 'password required'
       })
     }
-    const saltRounds = 10
+
     const passwordHash = await bcrypt.hash(body.password, saltRounds)
 
     const user = new User({
@@ -40,6 +41,7 @@ userRouter.post('/', async (request, response, next) => {
     const savedUser = await user.save()
     response.json(savedUser)
   } catch (error) {
+    console.log(error)
     response.status(400).json(error)
   }
 })
