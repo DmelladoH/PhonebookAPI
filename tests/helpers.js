@@ -2,8 +2,9 @@ const supertest = require('supertest')
 const { app } = require('../index')
 const User = require('../models/User')
 const Contact = require('../models/Contact')
-const api = supertest(app)
+const jwt = require('jsonwebtoken')
 
+const api = supertest(app)
 const initialContacts = [
   {
     name: 'Manuel',
@@ -28,6 +29,26 @@ const initialUsers = [
   }
 ]
 
+const generateTempToken = (infoToken) => {
+  return jwt.sign(infoToken, process.env.SECRET, {
+    expiresIn: 60
+  })
+}
+
+const saveInitialContacts = async () => {
+  for (const contact of initialContacts) {
+    const contactObject = new Contact(contact)
+    await contactObject.save()
+  }
+}
+
+const saveInitialUsers = async () => {
+  for (const user of initialUsers) {
+    const userObject = new User(user)
+    await userObject.save()
+  }
+}
+
 const getAllContacts = async () => {
   const contactDB = await Contact.find({})
   return contactDB.map(contact => contact.toJSON())
@@ -46,4 +67,15 @@ const getUser = async (id) => {
   return await api.get(`/api/users/${id}`)
 }
 
-module.exports = { initialContacts, initialUsers, api, getAllContacts, getContact, getAllUsers, getUser }
+module.exports = {
+  initialContacts,
+  initialUsers,
+  api,
+  getAllContacts,
+  getContact,
+  getAllUsers,
+  getUser,
+  saveInitialContacts,
+  saveInitialUsers,
+  generateTempToken
+}

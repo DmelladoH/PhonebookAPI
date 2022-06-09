@@ -5,18 +5,15 @@ const {
   initialUsers,
   api,
   getAllUsers,
-  getUser
+  getUser,
+  saveInitialUsers
 } = require('./helpers')
 
 const User = require('../models/User')
 
 beforeEach(async () => {
   await User.deleteMany({})
-
-  for (const user of initialUsers) {
-    const userObject = new User(user)
-    await userObject.save()
-  }
+  await saveInitialUsers()
 })
 
 describe('GET / getting ', () => {
@@ -137,12 +134,11 @@ describe('POST / a new User', () => {
       .expect(400)
       .expect('Content-Type', /application\/json/)
 
-    console.log(response)
     const userDB = await getAllUsers()
     expect(userDB).toHaveLength(initialUsers.length)
     expect(response.body.errors.userName.message).toContain('Error, expected `userName` to be unique. Value: `testUser`')
   })
-  test('is not created when the userName is invalid', async () => {
+  test.skip('is not created when the userName is invalid', async () => {
     const newInvalidUser = {
       userName: 'a a',
       name: 'name',
@@ -159,7 +155,6 @@ describe('POST / a new User', () => {
 
     expect(response.body.errors.userName.message).toContain('invalid userName')
 
-    console.log(response.body)
     const userDB = await getAllUsers()
     expect(userDB).toHaveLength(initialUsers.length)
   })

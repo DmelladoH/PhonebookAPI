@@ -12,7 +12,7 @@ const contactSchema = new Schema({
     type: String,
     required: [true, 'phonenumber required']
   },
-  users: [{
+  user: [{
     type: Schema.Types.ObjectId,
     ref: 'User'
   }]

@@ -17,7 +17,7 @@ function databaseConnection (connectionURI, envarionment) {
 }
 
 function databaseDisconnection () {
-  mongoose.connection.disconnect()
+  mongoose.disconnect()
 }
 
 function mongoConnection (connectionURI) {

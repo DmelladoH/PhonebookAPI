@@ -3,22 +3,25 @@ const mongoose = require('mongoose')
 const { server } = require('../index')
 const {
   initialContacts,
+  initialUsers,
   api,
   getAllContacts,
-  getContact
+  getContact,
+  saveInitialUsers,
+  saveInitialContacts,
+  generateTempToken
 } = require('./helpers')
 
 const Contact = require('../models/Contact')
-
+const User = require('../models/User')
 // integration test
 
 beforeEach(async () => {
   await Contact.deleteMany({})
+  await User.deleteMany({})
 
-  for (const contact of initialContacts) {
-    const contactObject = new Contact(contact)
-    await contactObject.save()
-  }
+  await saveInitialUsers()
+  await saveInitialContacts()
 })
 
 describe('GET / getting ', () => {
@@ -60,13 +63,25 @@ describe('GET / getting ', () => {
 
 describe('POST / a new Contact ', () => {
   test('is created when it is correct', async () => {
+    const { userName } = initialUsers[0]
+    const user = await User.findOne({ userName })
+
+    const userForToken = {
+      id: user.id,
+      userName: user.userName
+    }
+
+    const token = generateTempToken(userForToken)
+
     const newContact = {
       name: 'Carlos',
       number: '000-00000'
+
     }
 
     await api
       .post('/api/contacts')
+      .set({ authorization: 'bearer ' + token })
       .send(newContact)
       .expect(200)
       .expect('Content-Type', /application\/json/)
@@ -78,12 +93,23 @@ describe('POST / a new Contact ', () => {
   })
 
   test('is not created without the name field', async () => {
+    const { userName } = initialUsers[0]
+    const user = await User.findOne({ userName })
+
     const newInvalidContact = {
       number: '000-00000'
     }
 
+    const userForToken = {
+      id: user.id,
+      userName: user.userName
+    }
+
+    const token = generateTempToken(userForToken)
+
     await api
       .post('/api/contacts')
+      .set({ authorization: 'bearer ' + token })
       .send(newInvalidContact)
       .expect(400)
       .expect('Content-Type', /application\/json/)
@@ -93,13 +119,24 @@ describe('POST / a new Contact ', () => {
   })
 
   test('is not created without the number field', async () => {
+    const { userName } = initialUsers[0]
+    const user = await User.findOne({ userName })
+
     const newInvalidContact = {
       name: 'Carlos'
     }
 
+    const userForToken = {
+      id: user.id,
+      userName: user.userName
+    }
+
+    const token = generateTempToken(userForToken)
+
     await api
       .post('/api/contacts')
       .send(newInvalidContact)
+      .set({ authorization: 'bearer ' + token })
       .expect(400)
       .expect('Content-Type', /application\/json/)
 
@@ -108,13 +145,24 @@ describe('POST / a new Contact ', () => {
   })
 
   test('is not created when the contact is already created', async () => {
+    const { userName } = initialUsers[0]
+    const user = await User.findOne({ userName })
+
     const newInvalidContact = {
       name: initialContacts[0].name,
       number: '000-00000'
     }
 
+    const userForToken = {
+      id: user.id,
+      userName: user.userName
+    }
+
+    const token = generateTempToken(userForToken)
+
     await api
       .post('/api/contacts')
+      .set({ authorization: 'bearer ' + token })
       .send(newInvalidContact)
       .expect(400)
       .expect('Content-Type', /application\/json/)
@@ -122,15 +170,61 @@ describe('POST / a new Contact ', () => {
     const contactDB = await getAllContacts()
     expect(contactDB).toHaveLength(initialContacts.length)
   })
+
+  test('is not created when there is not authorization', async () => {
+    const newContact = {
+      name: 'Carlos',
+      number: '000-00000'
+
+    }
+
+    await api
+      .post('/api/contacts')
+      .send(newContact)
+      .expect(401)
+
+    const contactsDB = await getAllContacts()
+    expect(contactsDB).toHaveLength(initialContacts.length)
+  })
+
+  test('is not created when the authorization is invalid', async () => {
+    const token = 'invalidToken'
+
+    const newContact = {
+      name: 'Carlos',
+      number: '000-00000'
+
+    }
+
+    await api
+      .post('/api/contacts')
+      .set({ authorization: 'bearer ' + token })
+      .send(newContact)
+      .expect(401)
+
+    const contactsDB = await getAllContacts()
+    expect(contactsDB).toHaveLength(initialContacts.length)
+  })
 })
 
 describe('DELETE / deleting contacts ', () => {
   test('when exists in the database', async () => {
+    const { userName } = initialUsers[0]
+    const user = await User.findOne({ userName })
+
     const contactDB = await getAllContacts()
     const noteToDelete = contactDB[0]
 
+    const userForToken = {
+      id: user.id,
+      userName: user.userName
+    }
+
+    const token = generateTempToken(userForToken)
+
     await api
       .delete(`/api/contacts/${noteToDelete.id}`)
+      .set({ authorization: 'bearer ' + token })
       .expect(204)
 
     const response = await getAllContacts()
@@ -140,8 +234,19 @@ describe('DELETE / deleting contacts ', () => {
   })
 
   test('does not delete when the contact does not exist in the database', async () => {
+    const { userName } = initialUsers[0]
+    const user = await User.findOne({ userName })
+
+    const userForToken = {
+      id: user.id,
+      userName: user.userName
+    }
+
+    const token = generateTempToken(userForToken)
+
     await api
       .delete('/api/contacts/1234')
+      .set({ authorization: 'bearer ' + token })
       .expect(400)
 
     const contactDB = await getAllContacts()
@@ -152,10 +257,20 @@ describe('DELETE / deleting contacts ', () => {
 
 describe('PUT / Upgrading a contact ', () => {
   test('when the contact exists in the database', async () => {
+    const { userName } = initialUsers[0]
+    const user = await User.findOne({ userName })
+
     const contactDB = await getAllContacts()
     const contactToUpdate = contactDB[0]
 
     const id = contactToUpdate.id
+
+    const userForToken = {
+      id: user.id,
+      userName: user.userName
+    }
+
+    const token = generateTempToken(userForToken)
 
     const newContact = {
       name: 'Jaime',
@@ -164,6 +279,7 @@ describe('PUT / Upgrading a contact ', () => {
 
     await api
       .put(`/api/contacts/${id}`)
+      .set({ authorization: 'bearer ' + token })
       .send(newContact)
       .expect(200)
 

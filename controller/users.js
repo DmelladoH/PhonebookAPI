@@ -4,7 +4,10 @@ const userRouter = require('express').Router()
 const User = require('../models/User')
 
 userRouter.get('/', async (request, response) => {
-  const user = await User.find({})
+  const user = await User.find({}).populate('contacts', {
+    name: 1,
+    number: 1
+  })
   response.json(user)
 })
 
@@ -22,7 +25,7 @@ userRouter.get('/:id', async (request, response, next) => {
 userRouter.post('/', async (request, response, next) => {
   const body = request.body
   const saltRounds = 10
-  console.log('xd')
+
   try {
     if (!body.password) {
       return response.status(400).json({
@@ -41,7 +44,6 @@ userRouter.post('/', async (request, response, next) => {
     const savedUser = await user.save()
     response.json(savedUser)
   } catch (error) {
-    console.log(error)
     response.status(400).json(error)
   }
 })

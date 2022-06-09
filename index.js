@@ -11,33 +11,22 @@ const { databaseConnection, databaseDisconnection } = require('./mongo')
 
 const notFound = require('./middleware/notFound')
 const handleError = require('./middleware/handleError')
+const requestLogger = require('./middleware/requestLogger')
+
 const contactRouter = require('./controller/contacts')
 const usersRouter = require('./controller/users')
+const loginRouter = require('./controller/login')
 
 app.use(express.json())
 app.use(cors())
 
 databaseConnection(connectionURI, environment)
 
-const requestLogger = (request, response, next) => {
-  console.log('Method: ', request.method)
-  console.log('Path: ', request.path)
-  console.log('Body: ', request.body)
-  console.log('------')
-
-  next()
-}
-
 app.use(requestLogger)
-
-/* app.get('/info', (request, response) => {
-  const phonebookSize = Contact.length
-  const time = new Date().toUTCString()
-  response.send(`<div><p>Phonebook has info for ${phonebookSize} people<p/><p>${time}<p/><div/>`)
-}) */
 
 app.use('/api/contacts', contactRouter)
 app.use('/api/users', usersRouter)
+app.use('/api/login', loginRouter)
 
 app.use(notFound)
 app.use(handleError)
